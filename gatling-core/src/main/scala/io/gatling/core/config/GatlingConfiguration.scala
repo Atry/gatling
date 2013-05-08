@@ -15,7 +15,7 @@
  */
 package io.gatling.core.config
 
-import scala.collection.JavaConversions.{ asScalaBuffer, mapAsJavaMap }
+import scala.collection.JavaConversions.mapAsJavaMap
 import scala.collection.mutable
 
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -120,6 +120,8 @@ object GatlingConfiguration {
 
 					SslConfiguration(trustStore, keyStore)
 				}),
+			jdbc = JdbcConfiguration(
+				statementTimeoutInMs = config.getInt(CONF_JDBC_STATEMENT_TIMEOUT_IN_MS)),
 			data = DataConfiguration(
 				dataWriterClasses = config.getString(CONF_DATA_WRITER_CLASS_NAMES).toStringSeq.map {
 					case "console" => "io.gatling.core.result.writer.ConsoleDataWriter"
@@ -132,8 +134,8 @@ object GatlingConfiguration {
 					case "file" => "io.gatling.charts.result.reader.FileDataReader"
 					case clazz => clazz
 				},
-				jdbc = JDBCConfiguration(
-					db = DBConfiguration(
+				jdbc = JdbcWriterConfiguration(
+					db = DbConfiguration(
 					    url = config.getString(CONF_JDBC_URL),
 					    username = config.getString(CONF_JDBC_USERNAME),
 					    password = config.getString(CONF_JDBC_PASSWORD)
@@ -221,23 +223,25 @@ case class StoreConfiguration(
 	password: String,
 	algorithm: Option[String])
 
+case class JdbcConfiguration(
+	statementTimeoutInMs: Int)
+
 case class DataConfiguration(
 	dataWriterClasses: Seq[String],
 	dataReaderClass: String,
-	jdbc: JDBCConfiguration,
+	jdbc: JdbcWriterConfiguration,
 	console: ConsoleConfiguration,
 	graphite: GraphiteConfiguration)
 
-case class DBConfiguration(
-    url: String,
-    username: String,
-    password: String
-    )
-
-case class JDBCConfiguration(
-    db: DBConfiguration
+case class JdbcWriterConfiguration(
+	db: DbConfiguration
 )
-	
+
+case class DbConfiguration(
+	url: String,
+	username: String,
+	password: String)
+
 case class ConsoleConfiguration(
 	light: Boolean)
 
@@ -253,5 +257,6 @@ case class GatlingConfiguration(
 	core: CoreConfiguration,
 	charting: ChartingConfiguration,
 	http: HttpConfiguration,
+	jdbc: JdbcConfiguration,
 	data: DataConfiguration,
 	config: Config)
